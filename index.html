@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Million Dollar Macho Man</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+      background-color: #000;
+      cursor: none; /* Hide the default cursor */
+    }
+    
+    /* 8-bit style pixelated rendering */
+    * {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    
+    /* Custom cursor */
+    .cursor {
+      position: fixed;
+      width: 16px;
+      height: 16px;
+      border-radius: 0;
+      background-color: #FFD700;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      /* 8-bit style shadow */
+      box-shadow: 
+        4px 0 0 0 #000,
+        0 4px 0 0 #000,
+        4px 4px 0 0 #000;
+    }
+    
+    /* Game character container */
+    .game-character {
+      position: absolute;
+      width: 300px;
+      height: 400px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -60%);
+      z-index: 10;
+    }
+    
+    /* 8-bit grid for character */
+    .pixel-grid {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      grid-template-rows: repeat(24, 1fr);
+      width: 100%;
+      height: 100%;
+    }
+    
+    .pixel {
+      background-color: transparent;
+      transition: background-color 0.1s;
+      position: relative;
+    }
+    
+    .pixel.filled {
+      background-color: #fff;
+    }
+    
+    .pixel.yellow {
+      background-color: #FFD700;
+    }
+    
+    .pixel.black {
+      background-color: #000;
+    }
+    
+    .pixel.outline {
+      background-color: #000;
+      z-index: 1;
+    }
+    
+    /* Game elements */
+    .game-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      z-index: -1;
+    }
+    
+    .game-grid {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(32, 1fr);
+      grid-template-rows: repeat(24, 1fr);
+      z-index: 0;
+    }
+    
+    .grid-cell {
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    
+    /* Speech bubble */
+    .speech-bubble {
+      position: absolute;
+      top: 20%;
+      left: 60%;
+      padding: 16px;
+      background-color: #000;
+      border: 4px solid #fff;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 24px;
+      font-weight: bold;
+      z-index: 20;
+      opacity: 0;
+      transform: translateY(20px);
+      text-transform: uppercase;
+      box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 0.5);
+    }
+    
+    .speech-bubble:before {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 30px;
+      border-width: 20px 0 0 20px;
+      border-style: solid;
+      border-color: #fff transparent transparent transparent;
+    }
+    
+    /* 8-bit style headline */
+    .headline {
+      position: absolute;
+      top: 10%;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 48px;
+      font-weight: bold;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -2px;
+      z-index: 20;
+      opacity: 0;
+    }
+    
+    .headline .gold {
+      color: #FFD700;
+      display: inline-block;
+      text-shadow: 4px 4px 0 #000;
+    }
+    
+    /* Particles for "power-up" effect */
+    .particles-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
+    
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background-color: #fff;
+      transform: translate(-50%, -50%);
+    }
+    
+    .particle.yellow {
+      background-color: #FFD700;
+    }
+    
+    /* Scanlines effect */
+    .scanlines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        to bottom,
+        transparent 50%,
+        rgba(0, 0, 0, 0.1) 50%
+      );
+      background-size: 100% 4px;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0.3;
+    }
+    
+    /* CRT effect */
+    .crt-effect {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 99;
+      opacity: 0.1;
+      background: radial-gradient(
+        circle at center,
+        transparent 60%,
+        rgba(0, 0, 0, 0.8) 100%
+      );
+    }
+    
+    /* Controls hint */
+    .controls-hint {
+      position: absolute;
+      bottom: 30px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      z-index: 30;
+    }
+    
+    .key {
+      display: inline-block;
+      padding: 4px 8px;
+      margin: 0 4px;
+      background-color: #fff;
+      color: #000;
+      border: 2px solid #000;
+      box-shadow: 3px 3px 0 #000;
+    }
+    
+    /* Power bar */
+    .power-bar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 200px;
+      height: 20px;
+      background-color: #000;
+      border: 4px solid #fff;
+      z-index: 30;
+    }
+    
+    .power-level {
+      height: 100%;
+      width: 0%;
+      background-color: #FFD700;
+    }
+    
+    /* 8-bit SVG paths for Macho Man glasses */
+    .svg-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 15;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Custom cursor -->
+  <div class="cursor"></div>
+  
+  <!-- CRT effects -->
+  <div class="scanlines"></div>
+  <div class="crt-effect"></div>
+  
+  <!-- Game background grid -->
+  <div class="game-background">
+    <div class="game-grid" id="gameGrid"></div>
+  </div>
+  
+  <!-- Particles container -->
+  <div class="particles-container" id="particles"></div>
+  
+  <!-- Macho Man character -->
+  <div class="game-character">
+    <div class="pixel-grid" id="pixelGrid"></div>
+  </div>
+  
+  <!-- SVG container for 8-bit style glasses animation -->
+  <div class="svg-container">
+    <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+      <path id="sunglasses" d="M300,220 L340,220 L340,230 L360,230 L360,220 L400,220 L400,240 L360,240 L360,250 L340,250 L340,240 L300,240 Z" 
+            fill="none" stroke="#FFD700" stroke-width="4" />
+    </svg>
+  </div>
+  
+  <!-- 8-bit style headline -->
+  <h1 class="headline" id="headline">
+    Million <span class="gold">Dollar</span> Macho Man
+  </h1>
+  
+  <!-- Macho Man speech bubble -->
+  <div class="speech-bubble" id="speechBubble">
+    OH YEAH!!!
+  </div>
+  
+  <!-- Power bar -->
+  <div class="power-bar">
+    <div class="power-level" id="powerLevel"></div>
+  </div>
+  
+  <!-- Game controls hint -->
+  <div class="controls-hint">
+    Move mouse to control • <span class="key">Click</span> to power up • <span class="key">Space</span> for special move
+  </div>
+
+  <script src="lib/anime.min.js"></script>
+  <script>
+    // Mouse position tracking
+    let mouseX = 0;
+    let mouseY = 0;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+    let mouseSpeed = 0;
+    
+    // Game state
+    let powerLevel = 0;
+    let characterDirection = 1; // 1 = right, -1 = left
+    let characterState = 'idle'; // idle, walk, punch
+    let frameCount = 0;
+    
+    // DOM references
+    const cursor = document.querySelector('.cursor');
+    const pixelGrid = document.getElementById('pixelGrid');
+    const gameGrid = document.getElementById('gameGrid');
+    const particlesContainer = document.getElementById('particles');
+    const powerLevelEl = document.getElementById('powerLevel');
+    const speechBubble = document.getElementById('speechBubble');
+    
+    // Create game grid
+    for (let i = 0; i < 32 * 24; i++) {
+      const cell = document.createElement('div');
+      cell.classList.add('grid-cell');
+      gameGrid.appendChild(cell);
+    }
+    
+    // Create pixel grid for 8-bit character
+    for (let i = 0; i < 16 * 24; i++) {
+      const pixel = document.createElement('div');
+      pixel.classList.add('pixel');
+      pixel.dataset.index = i;
+      pixelGrid.appendChild(pixel);
+    }
+    
+    // Mouse move handler
+    document.addEventListener('mousemove', (e) => {
+      // Update mouse position
+      prevMouseX = mouseX;
+      prevMouseY = mouseY;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      
+      // Calculate mouse speed
+      const dx = mouseX - prevMouseX;
+      const dy = mouseY - prevMouseY;
+      mouseSpeed = Math.sqrt(dx * dx + dy * dy);
+      
+      // Update cursor position
+      cursor.style.left = mouseX + 'px';
+      cursor.style.top = mouseY + 'px';
+      
+      // Update character direction based on mouse movement
+      if (dx > 2) {
+        characterDirection = 1;
+        characterState = 'walk';
+      } else if (dx < -2) {
+        characterDirection = -1;
+        characterState = 'walk';
+      } else {
+        characterState = 'idle';
+      }
+      
+      // Trigger particle effect at high speeds
+      if (mouseSpeed > 15) {
+        createParticles(5, mouseX, mouseY);
+      }
+    });
+    
+    // Click handler for power-up effect
+    document.addEventListener('click', (e) => {
+      // Punch animation
+      characterState = 'punch';
+      setTimeout(() => { characterState = 'idle'; }, 500);
+      
+      // Trigger a speech bubble
+      animateSpeechBubble();
+      
+      // Create power-up particles
+      createParticles(20, e.clientX, e.clientY);
+      
+      // Increment power level
+      powerLevel = Math.min(powerLevel + 10, 100);
+      powerLevelEl.style.width = powerLevel + '%';
+      
+      // At max power, do special effect
+      if (powerLevel >= 100) {
+        powerLevel = 0;
+        powerLevelEl.style.width = '0%';
+        
+        // Special effect - screen flash
+        const flash = document.createElement('div');
+        flash.style.position = 'fixed';
+        flash.style.top = '0';
+        flash.style.left = '0';
+        flash.style.width = '100%';
+        flash.style.height = '100%';
+        flash.style.backgroundColor = '#FFD700';
+        flash.style.zIndex = '200';
+        flash.style.opacity = '0.8';
+        document.body.appendChild(flash);
+        
+        // Fade out the flash
+        anime({
+          targets: flash,
+          opacity: 0,
+          duration: 300,
+          easing: 'easeOutQuad',
+          complete: () => {
+            document.body.removeChild(flash);
+          }
+        });
+      }
+    });
+    
+    // Space key for special move
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        // Trigger special move
+        characterState = 'special';
+        
+        // Reset after animation time
+        setTimeout(() => { characterState = 'idle'; }, 1000);
+        
+        // Special move speech bubble
+        speechBubble.innerHTML = 'MACHO MADNESS!';
+        animateSpeechBubble();
+        
+        // Special move particle explosion
+        createParticles(50, window.innerWidth / 2, window.innerHeight / 2);
+      }
+    });
+    
+    // Create particles
+    function createParticles(count, x, y) {
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        
+        // Some particles are yellow
+        if (i % 3 === 0) {
+          particle.classList.add('yellow');
+        }
+        
+        // Set initial position
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        
+        particlesContainer.appendChild(particle);
+        
+        // 8-bit style movement animation
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 100 + 50;
+        const duration = Math.random() * 1000 + 500;
+        
+        anime({
+          targets: particle,
+          translateX: [0, Math.round(Math.cos(angle) * distance / 8) * 8],
+          translateY: [0, Math.round(Math.sin(angle) * distance / 8) * 8],
+          opacity: [1, 0],
+          easing: 'steps(8)',
+          duration: duration,
+          complete: () => {
+            particlesContainer.removeChild(particle);
+          }
+        });
+      }
+    }
+    
+    // Animate speech bubble
+    function animateSpeechBubble() {
+      // Show speech bubble
+      anime({
+        targets: '#speechBubble',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 300,
+        easing: 'easeOutQuad'
+      });
+      
+      // Hide after delay
+      setTimeout(() => {
+        anime({
+          targets: '#speechBubble',
+          opacity: 0,
+          translateY: -10,
+          duration: 300,
+          easing: 'easeInQuad'
+        });
+      }, 2000);
+    }
+    
+    // 8-bit Macho Man Randy Savage character patterns
+    const characterPatterns = {
+      idle: [
+        // Body
+        7, 8, 23, 24, 39, 40, 55, 56, 71, 72, 87, 88, 103, 104, 119, 120,
+        135, 136, 151, 152, 167, 168, 183, 184, 199, 200, 215, 216, 
+        // Head
+        38, 41, 54, 57, 70, 73, 86, 89, 102, 105, 118, 121,
+        // Arms
+        134, 137, 150, 153, 166, 169, 182, 185,
+        // Legs
+        231, 232, 247, 248, 263, 264, 279, 280, 295, 296, 311, 312,
+        230, 233, 246, 249, 262, 265, 278, 281, 294, 297, 310, 313
+      ],
+      walk: [
+        // Body (same as idle)
+        7, 8, 23, 24, 39, 40, 55, 56, 71, 72, 87, 88, 103, 104, 119, 120,
+        135, 136, 151, 152, 167, 168, 183, 184, 199, 200, 215, 216, 
+        // Head (same as idle)
+        38, 41, 54, 57, 70, 73, 86, 89, 102, 105, 118, 121,
+        // Arms (slightly different)
+        134, 138, 150, 154, 166, 170, 182, 186,
+        // Legs (walking pose)
+        231, 232, 247, 248, 263, 264, 279, 280, 295, 296, 311, 312,
+        229, 234, 245, 250, 261, 266, 277, 282, 293, 298, 309, 314
+      ],
+      punch: [
+        // Body (shifted for punch)
+        7, 8, 23, 24, 39, 40, 55, 56, 71, 72, 87, 88, 103, 104, 119, 120,
+        135, 136, 151, 152, 167, 168, 183, 184, 199, 200, 215, 216, 
+        // Head (same as idle)
+        38, 41, 54, 57, 70, 73, 86, 89, 102, 105, 118, 121,
+        // Arms (extended for punch)
+        134, 139, 149, 155, 165, 171, 181, 187, 196, 172, 197, 188,
+        // Legs (stable stance)
+        231, 232, 247, 248, 263, 264, 279, 280, 295, 296, 311, 312,
+        230, 233, 246, 249, 262, 265, 278, 281, 294, 297, 310, 313
+      ],
+      special: [
+        // Body (same)
+        7, 8, 23, 24, 39, 40, 55, 56, 71, 72, 87, 88, 103, 104, 119, 120,
+        135, 136, 151, 152, 167, 168, 183, 184, 199, 200, 215, 216, 
+        // Head (same)
+        38, 41, 54, 57, 70, 73, 86, 89, 102, 105, 118, 121,
+        // Arms (raised up)
+        133, 138, 149, 154, 165, 170, 181, 186, 197, 202, 213, 218,
+        // Legs (wider stance)
+        231, 232, 247, 248, 263, 264, 279, 280, 295, 296, 311, 312,
+        228, 235, 244, 251, 260, 267, 276, 283, 292, 299, 308, 315
+      ],
+    };
+    
+    // Yellow pixel indices (for accessories like glasses, belt)
+    const yellowPixels = {
+      idle: [85, 90, 101, 106, 117, 122, 198, 201, 214, 217],
+      walk: [85, 90, 101, 106, 117, 122, 198, 201, 214, 217],
+      punch: [85, 90, 101, 106, 117, 122, 198, 201, 214, 217],
+      special: [85, 90, 101, 106, 117, 122, 198, 201, 214, 217]
+    };
+    
+    // Update the 8-bit character
+    function updateCharacter() {
+      // Clear all pixels
+      const allPixels = document.querySelectorAll('.pixel');
+      allPixels.forEach(pixel => {
+        pixel.classList.remove('filled');
+        pixel.classList.remove('yellow');
+      });
+      
+      // Set active pixels based on current state
+      let pattern = characterPatterns[characterState];
+      if (!pattern) pattern = characterPatterns.idle;
+      
+      // Apply character pixels
+      pattern.forEach(index => {
+        // Apply character direction
+        let actualIndex = index;
+        if (characterDirection === -1) {
+          // Mirror the character for left direction
+          const row = Math.floor(index / 16);
+          const col = index % 16;
+          const mirroredCol = 15 - col;
+          actualIndex = row * 16 + mirroredCol;
+        }
+        
+        const pixel = document.querySelector(`.pixel[data-index="${actualIndex}"]`);
+        if (pixel) pixel.classList.add('filled');
+      });
+      
+      // Apply yellow accent pixels
+      let yellowPattern = yellowPixels[characterState];
+      if (!yellowPattern) yellowPattern = yellowPixels.idle;
+      
+      yellowPattern.forEach(index => {
+        // Apply character direction
+        let actualIndex = index;
+        if (characterDirection === -1) {
+          // Mirror the character for left direction
+          const row = Math.floor(index / 16);
+          const col = index % 16;
+          const mirroredCol = 15 - col;
+          actualIndex = row * 16 + mirroredCol;
+        }
+        
+        const pixel = document.querySelector(`.pixel[data-index="${actualIndex}"]`);
+        if (pixel) {
+          pixel.classList.remove('filled');
+          pixel.classList.add('yellow');
+        }
+      });
+    }
+    
+    // Animation loop
+    function animate() {
+      frameCount++;
+      
+      // Update character at a slower frame rate for pixelated animation
+      if (frameCount % 8 === 0) {
+        updateCharacter();
+      }
+      
+      requestAnimationFrame(animate);
+    }
+    
+    // Initialize animations
+    function init() {
+      // Start animation loop
+      animate();
+      
+      // Animate the SVG sunglasses
+      anime({
+        targets: '#sunglasses',
+        strokeDashoffset: [anime.setDashoffset, 0],
+        duration: 2000,
+        delay: 300,
+        easing: 'easeInOutSine',
+        direction: 'alternate',
+        loop: true
+      });
+      
+      // Animate the headline
+      anime({
+        targets: '#headline',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        delay: 600,
+        duration: 800,
+        easing: 'steps(5)'
+      });
+      
+      // Animate grid cells for retro effect
+      anime({
+        targets: '.grid-cell',
+        opacity: [0, 0.3, 0],
+        delay: anime.stagger(10, {grid: [32, 24], from: 'center'}),
+        duration: 3000,
+        easing: 'steps(3)',
+        direction: 'alternate',
+        loop: true
+      });
+    }
+    
+    // Start the game
+    init();
+    
+    // Periodically show speech bubble
+    setInterval(() => {
+      const phrases = ["OH YEAH!", "DIG IT!", "THE CREAM RISES!", "MACHO MADNESS!", "TOO HOT TO HANDLE!"];
+      speechBubble.innerHTML = phrases[Math.floor(Math.random() * phrases.length)];
+      
+      // Only show if not already visible
+      if (parseFloat(getComputedStyle(speechBubble).opacity) < 0.5) {
+        animateSpeechBubble();
+      }
+    }, 10000);
+  </script>
+</body>
+</html> 
